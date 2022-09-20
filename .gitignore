@@ -1,0 +1,7 @@
+*.dSYM
+*.swp
+.DS_Store
+main
+*.exe
+analyze.py
+/build
