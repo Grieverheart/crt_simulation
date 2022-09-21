@@ -9,6 +9,9 @@
 
 #include "beam.h"
 #include "renderer.h"
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_JPEG
+#include "stb_image.h"
 
 struct Game
 {
@@ -39,7 +42,7 @@ Patch butterfly(void)
 {
     Patch phi = pt_fmod(pt_time(), 1.0 / pt_frequency()) * pt_frequency();
 
-    Patch a = 0.25 * pt_lift1(sin, cos, (24.0 * M_PI) * phi);
+    Patch a = 0.25 * pt_lift1(sin, cos, nullptr, (24.0 * M_PI) * phi);
     Patch p = a * (
         pt_lift1(exp, pt_lift1(cos, (24.0 * M_PI) * phi)) - 
         2.0 * pt_lift1(cos, (96.0 * M_PI) * phi) - 
@@ -49,12 +52,44 @@ Patch butterfly(void)
     return p;
 }
 
+static inline int sqr(int x)
+{
+    return x*x;
+}
+
 Patch crt(size_t num_scanlines, double refresh_rate)
 {
+    int w,h,n;
+    unsigned char *image_data = stbi_load("../image.jpg", &w, &h, &n, 0);
+
+    Patch signal;
+    {
+        size_t idx = 0;
+        size_t n_points = 240 * 240;
+        Patch* patches = (Patch*) malloc(sizeof(Patch) * (n_points - 1));
+        //double last_intensity = 0.0;
+        for(size_t i = 0; i < 240; ++i)
+        {
+            for(size_t j = 0; j < 240; ++j)
+            {
+                double intensity = image_data[240*(239-i)+j] / 255.0;
+                // @todo: The are better approaches than using pt_line.
+                patches[idx++] = pt_point(0, 0, intensity);//pt_line(0.0, 0.0, last_intensity, 0.0, 0.0, intensity);
+                //last_intensity = intensity;
+            }
+        }
+        signal = pt_seq(n_points - 1, patches);
+    }
+
+    stbi_image_free(image_data);
+
     auto phaser = 2.0 * pt_fmod(pt_time(), 1.0 / pt_frequency()) * pt_frequency() - 1.0;
     Patch p = 
-    /* Horizontal deflector */ pt_point(1.0, 0.0) * pt_fset(phaser, num_scanlines * refresh_rate) +
-    /*  Vertical deflector  */ pt_point(0.0, 1.0) * (pt_lift1(floor, 0.5 * num_scanlines * pt_fset(phaser, refresh_rate)) + 0.5) * (2.0 / num_scanlines);
+    /* Horizontal deflector */ pt_point(1.0, 0.0, 0.0) * pt_fset(phaser, num_scanlines * refresh_rate) +
+    /*  Vertical deflector  */ pt_point(0.0, 1.0, 0.0) * (pt_lift1(floor, 0.5 * num_scanlines * pt_fset(phaser, refresh_rate)) + 0.5) * (2.0 / num_scanlines) +
+    ///*         Signal       */ pt_point(0.0, 0.0, 1.0);// * (pt_fset(phaser, (num_scanlines / 2) * refresh_rate) > 0.0);
+    /*         Signal       */ pt_fset(signal, refresh_rate);// * (pt_fset(phaser, (num_scanlines / 2) * refresh_rate) > 0.0);
+    // @todo: Perhaps use line_strip for generating the signal.
     return p;
 }
 
@@ -69,7 +104,7 @@ Game* game_create(GameVars vars)
 
         // Beam setup
         {
-            game->beam.num_edges  = 5000;
+            game->beam.num_edges  = 120000;
             game->beam.decay_time = 4e-2;
             game->beam.radius     = 1.0e-2;
 
@@ -77,12 +112,13 @@ Game* game_create(GameVars vars)
 
             game->beam.x = 0.0;
             game->beam.y = 0.0;
+            game->beam.z = 0.0;
 
-            game->beam.color[0]  = 0.05f;
-            game->beam.color[1]  = 1.00f;
-            game->beam.color[2]  = 0.05f;
+            game->beam.color[0]  = 1.0f;
+            game->beam.color[1]  = 1.0f;
+            game->beam.color[2]  = 1.0f;
 
-            game->beam.intensity = 500.0;
+            game->beam.intensity = 5000.0;
         }
 
         game->patch = crt(240, 60.0);

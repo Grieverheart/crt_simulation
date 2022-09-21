@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 
         // Make sure we don't use a very small frame duration
         // after resuming.
-        frame_sec = fmax(1.0 / 200.0, frame_sec);
+        //frame_sec = fmax(1.0 / 200.0, frame_sec);
         game_update_and_render(game, frame_sec);
 
         SDL_GL_SwapWindow(window);

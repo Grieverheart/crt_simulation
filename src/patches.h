@@ -21,7 +21,7 @@ struct Patch
 {
     uint8_t type;
     void* userdata;
-    void (*call)(void* userdata, double t, double f, double* x, double* y);
+    void (*call)(void* userdata, double t, double f, double* x, double* y, double* z);
 };
 
 typedef double (*DoubleFunc1)(double);
@@ -39,13 +39,13 @@ struct AudioData
     uint32_t sample_size;
 };
 
-Patch pt_lift1(DoubleFunc1 func_x, DoubleFunc1 func_y, Patch patch);
-Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, Patch patch_a, Patch patch_b);
+Patch pt_lift1(DoubleFunc1 func_x, DoubleFunc1 func_y, DoubleFunc1 func_z, Patch patch);
+Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, DoubleFunc2 func_z, Patch patch_a, Patch patch_b);
 
 Patch pt_time(void);
 Patch pt_frequency(void);
 
-Patch pt_point(double x, double y);
+Patch pt_point(double x, double y, double z);
 
 Patch pt_random(uint32_t seed);
 Patch pt_seq(size_t n_patches, Patch* patches);
@@ -54,11 +54,12 @@ Patch pt_audio(const AudioData* audio_Data);
 
 Patch pt_fmul(Patch patch, double factor);
 Patch pt_fset(Patch patch, double frequency);
+// @todo: offset?
 
 /* --- Derivative patches --- */
 Patch pt_lift1(DoubleFunc1 func, Patch patch);
-Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, Patch patch, double value);
-Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, double value, Patch patch);
+Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, DoubleFunc2 func_z, Patch patch, double value);
+Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, DoubleFunc2 func_z, double value, Patch patch);
 Patch pt_lift2(DoubleFunc2 func, Patch patch, double value);
 Patch pt_lift2(DoubleFunc2 func, double value, Patch patch);
 Patch pt_lift2(DoubleFunc2 func, Patch a, Patch b);
@@ -89,6 +90,7 @@ Patch operator>(double a, Patch b);
 
 Patch pt_point(double a);
 
+Patch pt_line(double xa, double ya, double za, double xb, double yb, double zb);
 Patch pt_line(double xa, double ya, double xb, double yb);
 Patch pt_line(Patch a, Patch b);
 Patch pt_line_strip(size_t n_points, const double* points);

@@ -12,13 +12,13 @@ namespace
     void renderer_upload_beam_points(const Renderer& renderer, double* beam_points, size_t num_edges)
     {
         // @todo: Try glMapBuffer.
-        float* beam_gl_points = new float[(num_edges + 1) * 4 * 2];
+        float* beam_gl_points = new float[(num_edges + 1) * 4 * 3];
         for(size_t i = 0; i < num_edges + 1; ++i)
-            for(size_t j = 0; j < 8; ++j)
-                beam_gl_points[8 * i + j] = (float)beam_points[2 * i + (j % 2)];
+            for(size_t j = 0; j < 12; ++j)
+                beam_gl_points[12 * i + j] = (float)beam_points[3 * i + (j % 3)];
 
         glBindBuffer(GL_ARRAY_BUFFER, renderer.beam_point_vbo);
-        glBufferData(GL_ARRAY_BUFFER, (num_edges + 1) * 4 * 2 * sizeof(*beam_gl_points), beam_gl_points, GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, (num_edges + 1) * 4 * 3 * sizeof(*beam_gl_points), beam_gl_points, GL_STREAM_DRAW);
         delete[] beam_gl_points;
 
         GLuint* indices = new GLuint[6 * num_edges];
@@ -203,9 +203,9 @@ bool gl_renderer_init(Renderer* renderer, size_t width, size_t height)
         glBindBuffer(GL_ARRAY_BUFFER, beam_point_vbo);
 
         glEnableVertexAttribArray((GLuint)0);
-        glVertexAttribPointer((GLuint)0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray((GLuint)1);
-        glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(8 * sizeof(float)));
+        glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(12 * sizeof(float)));
 
         glGenBuffers(1, &beam_point_ibo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, beam_point_ibo);

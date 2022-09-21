@@ -21,7 +21,7 @@ struct Beam
 
     double sim_time;
 
-    double x, y;
+    double x, y, z;
 };
 
 void beam_simulate(Beam* beam, BeamData* beam_data, const Patch* p, double base_frequency, double frame_sec);

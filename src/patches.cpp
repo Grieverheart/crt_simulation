@@ -72,20 +72,20 @@ namespace
 
     struct Lift1Data
     {
-        DoubleFunc1 func_x, func_y;
+        DoubleFunc1 func_x, func_y, func_z;
         Patch patch;
     };
 
     struct Lift2PartialData
     {
-        DoubleFunc2 func_x, func_y;
+        DoubleFunc2 func_x, func_y, func_z;
         double value;
         Patch patch;
     };
 
     struct Lift2Data
     {
-        DoubleFunc2 func_x, func_y;
+        DoubleFunc2 func_x, func_y, func_z;
         Patch patch_a, patch_b;
     };
 
@@ -95,54 +95,69 @@ namespace
         Patch* patches;
     };
 
-    void lift1_call(void* userdata, double t, double frequency, double* x, double* y)
+    void lift1_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         const Lift1Data* data = (const Lift1Data*) userdata;
-        data->patch.call(data->patch.userdata, t, frequency, x, y);
-        *x = data->func_x(*x);
-        *y = data->func_y(*y);
+        data->patch.call(data->patch.userdata, t, frequency, x, y, z);
+        if(data->func_x)
+            *x = data->func_x(*x);
+        if(data->func_y)
+            *y = data->func_y(*y);
+        if(data->func_z)
+            *z = data->func_z(*z);
     }
 
-    void lift2l_call(void* userdata, double t, double frequency, double* x, double* y)
+    void lift2l_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         const Lift2PartialData* data = (const Lift2PartialData*) userdata;
-        data->patch.call(data->patch.userdata, t, frequency, x, y);
-        *x = data->func_x(*x, data->value);
-        *y = data->func_y(*y, data->value);
+        data->patch.call(data->patch.userdata, t, frequency, x, y, z);
+        if(data->func_x)
+            *x = data->func_x(*x, data->value);
+        if(data->func_y)
+            *y = data->func_y(*y, data->value);
+        if(data->func_z)
+            *z = data->func_z(*z, data->value);
     }
 
-    void lift2r_call(void* userdata, double t, double frequency, double* x, double* y)
+    void lift2r_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         const Lift2PartialData* data = (const Lift2PartialData*) userdata;
-        data->patch.call(data->patch.userdata, t, frequency, x, y);
+        data->patch.call(data->patch.userdata, t, frequency, x, y, z);
         *x = data->func_x(data->value, *x);
         *y = data->func_y(data->value, *y);
+        *z = data->func_z(data->value, *z);
     }
 
-    void lift2_call(void* userdata, double t, double frequency, double* x, double* y)
+    void lift2_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         const Lift2Data* data = (const Lift2Data*) userdata;
-        double xa, ya, xb, yb;
-        data->patch_a.call(data->patch_a.userdata, t, frequency, &xa, &ya);
-        data->patch_b.call(data->patch_b.userdata, t, frequency, &xb, &yb);
-        *x = data->func_x(xa, xb);
-        *y = data->func_y(ya, yb);
+        double xa, ya, xb, yb, za, zb;
+        data->patch_a.call(data->patch_a.userdata, t, frequency, &xa, &ya, &za);
+        data->patch_b.call(data->patch_b.userdata, t, frequency, &xb, &yb, &zb);
+        if(data->func_x)
+            *x = data->func_x(xa, xb);
+        if(data->func_y)
+            *y = data->func_y(ya, yb);
+        if(data->func_z)
+            *z = data->func_z(za, zb);
     }
 
-    void point_call(void* userdata, double t, double frequency, double* x, double* y)
+    void point_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         const double* coords = (double*)userdata;
         *x = coords[0];
         *y = coords[1];
+        *z = coords[2];
     }
 
-    void time_call(void* userdata, double t, double f, double* x, double* y)
+    void time_call(void* userdata, double t, double f, double* x, double* y, double* z)
     {
         *x = t;
         *y = t;
+        *z = t;
     }
 
-    void seq_call(void* userdata, double t, double f, double* x, double* y)
+    void seq_call(void* userdata, double t, double f, double* x, double* y, double* z)
     {
         const PatchArray* seq_data = (const PatchArray*)userdata;
 
@@ -152,14 +167,14 @@ namespace
         if(pid < seq_data->n_patches)
         {
             const Patch* p = &seq_data->patches[pid];
-            p->call(p->userdata, t, f * seq_data->n_patches, x, y);
+            p->call(p->userdata, t, f * seq_data->n_patches, x, y, z);
         }
     }
 
-    void flip_call(void* userdata, double t, double frequency, double* x, double* y)
+    void flip_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         Patch p = *(const Patch*) userdata;
-        p.call(p.userdata, t, frequency, y, x);
+        p.call(p.userdata, t, frequency, y, x, z);
     }
 
     /* Algorithm "xor" from p. 4 of Marsaglia, "Xorshift RNGs" */
@@ -178,16 +193,17 @@ namespace
         return (double)xorshift32(rng) / std::numeric_limits<uint32_t>::max();
     }
 
-    void random_call(void* userdata, double t, double frequency, double* x, double* y)
+    void random_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         uint32_t* rng = (uint32_t*) userdata;
         *x = random(rng);
         *y = random(rng);
+        *z = random(rng);
     }
 
-    // @note: Frequency controls playbacks per second.
-    void wav_call(void* userdata, double t, double frequency, double* x, double* y)
+    void wav_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
+        *z = 1.0;
         const AudioData* audio = (const AudioData*)userdata;
 
         double phi = osc_phaser(t, frequency);
@@ -224,16 +240,16 @@ namespace
         }
     }
 
-    void fmul_call(void* userdata, double t, double frequency, double* x, double* y)
+    void fmul_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         const ScalarPatchData* data = (const ScalarPatchData*)userdata;
-        data->patch.call(data->patch.userdata, t, data->value * frequency, x, y);
+        data->patch.call(data->patch.userdata, t, data->value * frequency, x, y, z);
     }
 
-    void fset_call(void* userdata, double t, double frequency, double* x, double* y)
+    void fset_call(void* userdata, double t, double frequency, double* x, double* y, double* z)
     {
         const ScalarPatchData* data = (const ScalarPatchData*)userdata;
-        data->patch.call(data->patch.userdata, t, data->value, x, y);
+        data->patch.call(data->patch.userdata, t, data->value, x, y, z);
     }
 
 } // namespace
@@ -319,6 +335,7 @@ Patch patch_clone(Patch p)
             const Lift1Data* other_data = (const Lift1Data*) p.userdata;
             data->func_x = other_data->func_x;
             data->func_y = other_data->func_y;
+            data->func_z = other_data->func_z;
             data->patch = patch_clone(other_data->patch);
         } break;
 
@@ -330,6 +347,7 @@ Patch patch_clone(Patch p)
             const Lift2Data* other_data = (const Lift2Data*) p.userdata;
             data->func_x = other_data->func_x;
             data->func_y = other_data->func_y;
+            data->func_z = other_data->func_z;
             data->patch_a = patch_clone(other_data->patch_a);
             data->patch_b = patch_clone(other_data->patch_b);
         } break;
@@ -342,8 +360,8 @@ Patch patch_clone(Patch p)
 
         case PT_POINT:
         {
-            r.userdata = malloc(2 * sizeof(double));
-            memcpy(r.userdata, p.userdata, 2 * sizeof(double));
+            r.userdata = malloc(3 * sizeof(double));
+            memcpy(r.userdata, p.userdata, 3 * sizeof(double));
         } break;
 
         case PT_RANDOM:
@@ -395,54 +413,54 @@ Patch patch_clone(Patch p)
 }
 
 
-Patch pt_lift1(DoubleFunc1 func_x, DoubleFunc1 func_y, Patch patch)
+Patch pt_lift1(DoubleFunc1 func_x, DoubleFunc1 func_y, DoubleFunc1 func_z, Patch patch)
 {
     Patch p;
     p.userdata = malloc(sizeof(Lift1Data));
     p.type = PT_LIFT1;
-    new (p.userdata) Lift1Data{func_x, func_y, patch};
+    new (p.userdata) Lift1Data{func_x, func_y, func_z, patch};
     p.call = lift1_call;
     return p;
 }
 
 Patch pt_lift1(DoubleFunc1 func, Patch patch)
 {
-    return pt_lift1(func, func, patch);
+    return pt_lift1(func, func, func, patch);
 }
 
-Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, Patch patch_a, Patch patch_b)
+Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, DoubleFunc2 func_z, Patch patch_a, Patch patch_b)
 {
     Patch p;
     p.type = PT_LIFT2;
     p.call = lift2_call;
     p.userdata = malloc(sizeof(Lift2Data));
-    new (p.userdata) Lift2Data{func_x, func_y, patch_a, patch_b};
+    new (p.userdata) Lift2Data{func_x, func_y, func_z, patch_a, patch_b};
     return p;
 }
 
-Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, Patch patch, double value)
+Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, DoubleFunc2 func_z, Patch patch, double value)
 {
-    return pt_lift2(func_x, func_y, patch, pt_point(value));
+    return pt_lift2(func_x, func_y, func_z, patch, pt_point(value));
 }
 
-Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, double value, Patch patch)
+Patch pt_lift2(DoubleFunc2 func_x, DoubleFunc2 func_y, DoubleFunc2 func_z, double value, Patch patch)
 {
-    return pt_lift2(func_x, func_y, pt_point(value), patch);
+    return pt_lift2(func_x, func_y, func_z, pt_point(value), patch);
 }
 
 Patch pt_lift2(DoubleFunc2 func, Patch patch, double value)
 {
-    return pt_lift2(func, func, patch, pt_point(value));
+    return pt_lift2(func, func, func, patch, pt_point(value));
 }
 
 Patch pt_lift2(DoubleFunc2 func, double value, Patch patch)
 {
-    return pt_lift2(func, func, pt_point(value), patch);
+    return pt_lift2(func, func, func, pt_point(value), patch);
 }
 
 Patch pt_lift2(DoubleFunc2 func, Patch a, Patch b)
 {
-    return pt_lift2(func, func, a, b);
+    return pt_lift2(func, func, func, a, b);
 }
 
 Patch pt_fmod(Patch t, double value)
@@ -522,11 +540,12 @@ DEF_BINARY_OPERATOR(greater, >, double, Patch);
 
 #undef DEF_BINARY_OPERATOR
 
-Patch pt_point(double x, double y)
+Patch pt_point(double x, double y, double z)
 {
-    double* data = (double*) malloc(2 * sizeof(double));
+    double* data = (double*) malloc(3 * sizeof(double));
     data[0] = x;
     data[1] = y;
+    data[2] = z;
 
     Patch p;
     p.userdata = (void*) data;
@@ -537,7 +556,7 @@ Patch pt_point(double x, double y)
 
 Patch pt_point(double a)
 {
-    return pt_point(a, a);
+    return pt_point(a, a, a);
 }
 
 Patch pt_time(void)
@@ -545,10 +564,11 @@ Patch pt_time(void)
     return Patch{PT_TIME, nullptr, time_call};
 }
 
-void frequency_call(void* userdata, double t, double f, double* x, double* y)
+void frequency_call(void* userdata, double t, double f, double* x, double* y, double* z)
 {
     *x = f;
     *y = f;
+    *z = f;
 }
 
 Patch pt_frequency(void)
@@ -561,11 +581,19 @@ Patch pt_pow(Patch x, double power)
     return pt_lift2(pow, x, power);
 }
 
+Patch pt_line(double xa, double ya, double za, double xb, double yb, double zb)
+{
+    return 0.5 * (
+        pt_point(xb + xa, yb + ya, zb + za) -
+        pt_point(xb - xa, yb - ya, zb - za) * pt_lift1(cos, M_PI * pt_fmod(pt_time(), 1.0 / pt_frequency()) * pt_frequency())
+    );
+}
+
 Patch pt_line(double xa, double ya, double xb, double yb)
 {
     return 0.5 * (
-        pt_point(xb + xa, yb + ya) -
-        pt_point(xb - xa, yb - ya) * pt_lift1(cos, M_PI * pt_fmod(pt_time(), 1.0 / pt_frequency()) * pt_frequency())
+        pt_point(xb + xa, yb + ya, 2.0) -
+        pt_point(xb - xa, yb - ya, 0.0) * pt_lift1(cos, M_PI * pt_fmod(pt_time(), 1.0 / pt_frequency()) * pt_frequency())
     );
 }
 
@@ -621,7 +649,7 @@ Patch pt_line_loop(size_t n_points, const double* points)
 
 Patch pt_circle(void)
 {
-    return pt_lift1(sin, cos, (2.0 * M_PI) * pt_time() * pt_frequency());
+    return pt_lift1(sin, cos, nullptr, (2.0 * M_PI) * pt_time() * pt_frequency());
 }
 
 Patch pt_char_a(void)
@@ -1123,8 +1151,8 @@ Patch pt_char_colon(void)
     Patch* patches = (Patch*) malloc(2 * sizeof(Patch));
     new (patches) Patch[2]
     {
-        pt_point(0.0,  0.5),
-        pt_point(0.0, -0.5),
+        pt_point(0.0,  0.5, 1.0),
+        pt_point(0.0, -0.5, 1.0),
     };
     return pt_seq(2, patches);
 }
@@ -1134,7 +1162,7 @@ Patch pt_char_semicolon(void)
     Patch* patches = (Patch*) malloc(2 * sizeof(Patch));
     new (patches) Patch[2]
     {
-        pt_point(0.0,  0.5),
+        pt_point(0.0,  0.5, 1.0),
         pt_line(0.0, -0.5, 0.0, -1.0),
     };
     return pt_seq(2, patches);
@@ -1178,7 +1206,7 @@ Patch pt_char_greater(void)
 
 Patch pt_char_period(void)
 {
-    return pt_point(0.0, -1.0);
+    return pt_point(0.0, -1.0, 1.0);
 }
 
 Patch pt_char_slash(void)
@@ -1306,7 +1334,7 @@ Patch pt_text(const char* text, TextAlignment alignment)
                     text_patches[pt_char_count] = pt_char_none();
                 }
 
-                text_patches[pt_char_count] = pt_point(2.5 * i, -2.5 * line_count) + text_patches[pt_char_count];
+                text_patches[pt_char_count] = pt_point(2.5 * i, -2.5 * line_count, 1.0) + text_patches[pt_char_count];
 
                 ++pt_char_count;
             }
@@ -1341,7 +1369,7 @@ Patch pt_text(const char* text, TextAlignment alignment)
 
             for(size_t li = 0; li < line_sizes[wi]; ++li)
             {
-                text_patches[i] = pt_point(2.5 * offset, 0.0) + text_patches[i];
+                text_patches[i] = pt_point(2.5 * offset, 0.0, 1.0) + text_patches[i];
                 ++i;
             }
         }
@@ -1354,21 +1382,24 @@ Patch pt_text(const char* text, TextAlignment alignment)
     //@note: The center of each letter is actually 0,0.
     p = p + pt_point(
         -0.5 * 2.5 * (max_width - 1.0),
-         0.5 * 2.5 * (line_count - 1.0)
+         0.5 * 2.5 * (line_count - 1.0),
+         1.0
     );
 
     double a = 0.08 * 2.0 / 3.0;
     double b = 0.08 * 1.0;
 
-    return pt_point(a, b) * p;
+    return pt_point(a, b, 1.0) * p;
 }
 
 Patch pt_cardioid(void)
 {
     Patch patch =
-        2.0 * (1.0 - pt_lift1(cos, (2.00 * M_PI) * pt_time() * pt_frequency())) *
-        pt_lift1(sin, cos, (2.00 * M_PI) * pt_time() * pt_frequency()) +
-        pt_point(0.0, 2.0);
+        pt_point(1.0, 1.0, 0.0) * (
+            2.0 * (1.0 - pt_lift1(cos, (2.00 * M_PI) * pt_time() * pt_frequency())) *
+            pt_lift1(sin, cos, nullptr, (2.00 * M_PI) * pt_time() * pt_frequency())
+        ) +
+        pt_point(0.0, 2.0, 1.0);
 
     return patch;
 }

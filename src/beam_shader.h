@@ -26,7 +26,7 @@ out vec4 outColor;
 
 flat in float path_length;
 flat in int edge_id;
-smooth in vec2 beam_coord;
+smooth in vec3 beam_coord;
 
 void main(void)
 {
@@ -45,15 +45,15 @@ void main(void)
     {
         total_factor *= exp(-dot(beam_coord, beam_coord) / (2.0 * sigma * sigma)) / (SQRT2PI * sigma);
     }
-    outColor = vec4(total_factor * beam_color, 1.0);
+    outColor = vec4(beam_coord.z * total_factor * beam_color, 1.0);
 }
 )";
 
 static const char* vs = R"(
 #version 330
 
-layout(location = 0) in vec2 start;
-layout(location = 1) in vec2 end;
+layout(location = 0) in vec3 start;
+layout(location = 1) in vec3 end;
 
 // 3--2
 // | /|
@@ -66,21 +66,22 @@ uniform vec2 aspect_ratio_correction;
 
 flat out float path_length;
 flat out int edge_id;
-smooth out vec2 beam_coord;
+smooth out vec3 beam_coord;
 
 void main(void)
 {
     int vid = gl_VertexID % 4;
-    path_length = length(end - start);
+    path_length = length(end.xy - start.xy);
 
-    vec2 dir = beam_radius * ((path_length > 1e-5)? (end - start) / path_length: vec2(1.0, 0.0));
+    vec2 dir = beam_radius * ((path_length > 1e-5)? (end.xy - start.xy) / path_length: vec2(1.0, 0.0));
 
     vec2 orth = vec2(-dir.y, dir.x);
-    vec2 pos = ((vid < 2)? start - dir: end + dir) +
+    vec2 pos = ((vid < 2)? start.xy - dir: end.xy + dir) +
                ((vid == 0 || vid == 3)? orth: -orth);
 
-    beam_coord.x = ((vid < 2)? -beam_radius: path_length + beam_radius);
+    beam_coord.x = (vid < 2)? -beam_radius: path_length + beam_radius;
     beam_coord.y = (vid == 0 || vid == 3)? beam_radius: -beam_radius;
+    beam_coord.z = (vid < 2)? start.z: end.z;
 
     edge_id = gl_VertexID / 4;
 
