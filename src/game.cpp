@@ -93,6 +93,38 @@ Patch crt(size_t num_scanlines, double refresh_rate)
     return p;
 }
 
+void crt2_call(void* userdata, double t, double f, double* x, double* y, double* z)
+{
+    double* intensities = (double*) userdata;
+    double m = 60.0 * 240.0 * 240.0 * t;
+    double a = fmod(m, 240.0);
+    int b = (int(m) / 240) % 240;
+    *x = (a - 120.0) / 120.0;
+    *y = (b - 120.0) / 120.0;
+    *z = intensities[240 * b + int(a)];
+}
+
+Patch crt2(size_t num_scanlines, double refresh_rate)
+{
+    int w,h,n;
+    unsigned char *image_data = stbi_load("../image.jpg", &w, &h, &n, 0);
+
+    double* intensities = (double*) malloc(sizeof(double) * 240*240);
+    {
+        for(size_t i = 0; i < 240; ++i)
+            for(size_t j = 0; j < 240; ++j)
+                intensities[240 * i + j] = pow(image_data[240*(239-i)+j] / 255.0, 2.2);
+    }
+
+    stbi_image_free(image_data);
+
+    Patch p;
+    p.call = crt2_call;
+    p.type = 2;
+    p.userdata = (void*)intensities;
+    return p;
+}
+
 Game* game_create(GameVars vars)
 {
     Game* game = new Game;
@@ -104,8 +136,8 @@ Game* game_create(GameVars vars)
 
         // Beam setup
         {
-            game->beam.num_edges  = 120000;
-            game->beam.decay_time = 4e-2;
+            game->beam.num_edges  = 60000;
+            game->beam.decay_time = 4e-1;
             game->beam.radius     = 1.0e-2;
 
             game->beam.sim_time = 0.0;
@@ -118,10 +150,10 @@ Game* game_create(GameVars vars)
             game->beam.color[1]  = 1.0f;
             game->beam.color[2]  = 1.0f;
 
-            game->beam.intensity = 5000.0;
+            game->beam.intensity = 1500.0;
         }
 
-        game->patch = crt(240, 60.0);
+        game->patch = crt2(240, 60.0);
     }
 
     // Create renderer struct
