@@ -32,12 +32,6 @@ struct Renderer
     GLsizei viewport_size;
 };
 
-// @todo: Split into:
-// void gl_init(void);
-// gl_beam_renderer_init(BeamRenderer* renderer, size_t width, size_t height);
-// ...
-// gl_stage_editor_renderer_init(StageEditorRenderer* renderer, size_t width, size_t height)
-
 bool gl_renderer_init(Renderer* renderer, size_t width, size_t height);
 bool gl_renderer_resize(Renderer* renderer, size_t width, size_t height);
 void gl_renderer_draw_beam_points(const Renderer& renderer, const Beam& beam, const BeamData& beam_data);

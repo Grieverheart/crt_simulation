@@ -1,7 +1,12 @@
 #pragma once
 
 #include <cstddef>
-#include "patches.h"
+
+struct Patch
+{
+    void* userdata;
+    void (*call)(void* userdata, double t, double f, double* x, double* y, double* z);
+};
 
 struct BeamData
 {

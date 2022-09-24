@@ -11,7 +11,6 @@ namespace
 {
     void renderer_upload_beam_points(const Renderer& renderer, double* beam_points, size_t num_edges)
     {
-        // @todo: Try glMapBuffer.
         float* beam_gl_points = new float[(num_edges + 1) * 4 * 3];
         for(size_t i = 0; i < num_edges + 1; ++i)
             for(size_t j = 0; j < 12; ++j)

@@ -4,7 +4,6 @@ project(vectron)
 
 set(SOURCE_FILES
     src/main.cpp
-    src/patches.cpp
     src/renderer.cpp
     src/beam.cpp
     src/game.cpp)

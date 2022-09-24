@@ -2,7 +2,6 @@
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 
-#include "common.h"
 #include "game.h"
 
 int main(int argc, char* argv[])
@@ -10,12 +9,6 @@ int main(int argc, char* argv[])
     // Create window and gl context
     int window_width = 700;
     int window_height = 700;
-
-    GameVars game_vars
-    {
-        false,
-        window_width, window_height
-    };
 
     SDL_Window* window;
     SDL_GLContext gl_context;
@@ -39,7 +32,7 @@ int main(int argc, char* argv[])
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             window_width, window_height,
             SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI |
-            (game_vars.fullscreen? SDL_WINDOW_FULLSCREEN_DESKTOP: SDL_WINDOW_RESIZABLE)
+            SDL_WINDOW_RESIZABLE
         );
 
         if(!window)
@@ -69,8 +62,8 @@ int main(int argc, char* argv[])
         SDL_GL_SetSwapInterval(1);
     }
 
-    SDL_GL_GetDrawableSize(window, &game_vars.window_width, &game_vars.window_height);
-    Game* game = game_create(game_vars);
+    SDL_GL_GetDrawableSize(window, &window_width, &window_height);
+    Game* game = game_create(window_width, window_height);
     if(!game)
     {
         SDL_GL_DeleteContext(gl_context);
@@ -114,7 +107,8 @@ int main(int argc, char* argv[])
                 {
                     int drawable_width, drawable_height;
                     SDL_GL_GetDrawableSize(window, &drawable_width, &drawable_height);
-                    game_window_resize(game, drawable_width, drawable_height);
+                    SDL_GetWindowSize(window, &window_width, &window_height);
+                    game_window_resize(game, drawable_width, drawable_height, window_width, window_height);
                 }
                 else if(sdl_event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
                 {

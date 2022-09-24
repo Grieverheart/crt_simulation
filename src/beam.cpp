@@ -4,9 +4,6 @@
 void beam_simulate(Beam* beam, BeamData* beam_data, const Patch* p, double base_frequency, double frame_sec)
 {
     beam_data->dt = frame_sec / beam->num_edges;
-    // @note: we actually report one less point, but we use the fact that the last
-    // point is repeated into the next batch so that we can more easily do the
-    // lerp in the audio thread.
     beam_data->num_points = beam->num_edges;
     beam_data->points = new double[3 * (beam->num_edges + 1)];
 
