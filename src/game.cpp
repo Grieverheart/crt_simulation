@@ -35,12 +35,12 @@ void game_update_and_render(Game* game, double frame_sec)
 void crt_call(void* userdata, double t, double f, double* x, double* y, double* z)
 {
     double* intensities = (double*) userdata;
-    double m = 60.0 * 240.0 * 240.0 * t;
-    double a = fmod(m, 240.0);
-    int b = (int(m) / 240) % 240;
-    *x = (a - 120.0) / 120.0;
-    *y = (b - 120.0) / 120.0;
-    *z = intensities[240 * b + int(a)];
+    double m = 60.0 * 240.0 * t;
+    double a = m - int(m);
+    int b = int(m) % 240;
+    *x = 2.0 * (a - 0.5);
+    *y = -(b - 120.0) / 120.0;
+    *z = intensities[240 * b + int(a*240.0)];
 }
 
 Patch crt(size_t num_scanlines, double refresh_rate)
@@ -52,7 +52,7 @@ Patch crt(size_t num_scanlines, double refresh_rate)
     {
         for(size_t i = 0; i < 240; ++i)
             for(size_t j = 0; j < 240; ++j)
-                intensities[240 * i + j] = pow(image_data[240*(239-i)+j] / 255.0, 2.2);
+                intensities[240 * i + j] = pow(image_data[240*i+j] / 255.0, 2.2);
     }
 
     stbi_image_free(image_data);
